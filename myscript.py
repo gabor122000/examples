@@ -22,9 +22,10 @@ except IndexError:
 import carla
 import random
 import time
+import threading
 
 # ==============================================================================
-# -- World ---------------------------------------------------------------------
+# -- world -------------------------------------------------------------------
 # ==============================================================================
 
 # Connect to the CARLA server
@@ -48,6 +49,15 @@ traffic_lights = world.get_actors().filter("traffic.traffic_light")
 spawn_points = world.get_map().get_spawn_points()
 crossing_spawn_point = random.choice(spawn_points)
 crossing_location = crossing_spawn_point.location
+
+# Set up a spectator view
+spectator = world.get_spectator()
+spectator_transform = carla.Transform(
+    carla.Location(x=crossing_location.x, y=crossing_location.y - 20, z=20),
+    carla.Rotation(pitch=-30)
+)
+spectator.set_transform(spectator_transform)
+print("Spectator view set at the crossing.")
 
 # Spawn sensors at each corner of the intersection
 sensor_locations = [
@@ -83,12 +93,11 @@ def control_traffic_lights(lights, green_duration=10, red_duration=5):
         time.sleep(red_duration)
 
 # Run the traffic light control loop in a separate thread
-import threading
 light_control_thread = threading.Thread(target=control_traffic_lights, args=(traffic_lights,))
 light_control_thread.start()
 
 # Spawn random vehicles at some spawn points
-num_vehicles = 10
+num_vehicles = 40
 for _ in range(num_vehicles):
     vehicle_bp = random.choice(blueprint_library.filter('vehicle.*'))
     spawn_point = random.choice(spawn_points)
